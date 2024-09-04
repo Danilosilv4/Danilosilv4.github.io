@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BRAVEX</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+        h1 { 
+            font-family: 'Montserrat', sans-serif; 
+            color: #388e3c; 
+            text-align: center; 
+            font-size: 3em; 
+            margin-bottom: 20px; 
+        }
+        textarea { 
+            width: 100%; 
+            height: 150px; 
+            background-color: #ffffff; /* Fundo branco */
+            border: 1px solid #388e3c; /* Borda verde escura */
+            border-radius: 5px; /* Cantos arredondados */
+            padding: 10px; /* Espaçamento interno */
+            transition: background-color 0.3s; /* Transição suave */
+        }
+        textarea.fundo-verde {
+            background-color: #c8e6c9; /* Fundo verde claro */
+        }
+        input { width: 100px; }
+        button { padding: 10px; margin-top: 10px; }
+        .parte { margin-top: 20px; }
+        .resultado { margin-top: 10px; }
+        .contador { font-size: 0.9em; color: #666; display: flex; align-items: center; }
+        .ja-fiz { margin-top: 5px; margin-right: 10px; }
+        .lixeira { margin-left: 10px; cursor: pointer; }
+        .copiar { margin-left: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h1>BRAVEX</h1>
+    <textarea id="roteiro" placeholder="Insira seu roteiro aqui..."></textarea>
+    <div class="contador" id="contadorPrincipal">
+        Caracteres: 0 
+        <span class="lixeira" onclick="limparRoteiro()">🗑️</span>
+    </div>
+    <br>
+    <label for="caracteres">Número de caracteres por parte:</label>
+    <input type="number" id="caracteres" min="1" value="2000"> <!-- Valor padrão de 2000 -->
+    <button onclick="dividirRoteiro()">Dividir</button>
+
+    <div id="resultado"></div>
+
+    <script>
+        const textareaPrincipal = document.getElementById('roteiro');
+        const contadorPrincipal = document.getElementById('contadorPrincipal');
+
+        // Carrega o roteiro do localStorage
+        window.onload = function() {
+            const roteiroSalvo = localStorage.getItem('roteiro');
+            if (roteiroSalvo) {
+                textareaPrincipal.value = roteiroSalvo;
+                contadorPrincipal.childNodes[0].nodeValue = `Caracteres: ${roteiroSalvo.length}`;
+            }
+        };
+
+        // Atualiza o localStorage em tempo real
+        textareaPrincipal.addEventListener('input', function() {
+            localStorage.setItem('roteiro', this.value);
+            contadorPrincipal.childNodes[0].nodeValue = `Caracteres: ${this.value.length}`; // Atualiza o contador
+        });
+
+        function dividirRoteiro() {
+            const roteiro = textareaPrincipal.value;
+            const numCaracteres = parseInt(document.getElementById('caracteres').value);
+            const partes = [];
+            let parteAtual = '';
+
+            const frases = roteiro.split(/(?<=[.!?])\s+/); // Divide em frases com base em pontuação
+
+            frases.forEach(frase => {
+                // Se a parte atual já tiver caracteres e adicionar a frase exceder o limite
+                if (parteAtual.length + frase.length > numCaracteres && parteAtual.length >= numCaracteres) {
+                    partes.push(parteAtual.trim()); // Adiciona a parte atual
+                    parteAtual = frase; // Inicia uma nova parte com a frase atual
+                } else {
+                    parteAtual += (parteAtual ? ' ' : '') + frase; // Adiciona a frase à parte atual
+                }
+            });
+
+            // Adiciona a última parte se houver
+            if (parteAtual) {
+                partes.push(parteAtual.trim());
+            }
+
+            const resultadoDiv = document.getElementById('resultado');
+            resultadoDiv.innerHTML = ''; // Limpa o resultado anterior
+
+            partes.forEach((parte, index) => {
+                const divParte = document.createElement('div');
+                divParte.className = 'parte';
+                divParte.innerHTML = `<strong>Parte ${index + 1}:</strong>`;
+                
+                const textareaParte = document.createElement('textarea');
+                textareaParte.className = 'resultado';
+                textareaParte.value = parte;
+
+                const contador = document.createElement('div');
+                contador.className = 'contador';
+                contador.innerText = `Caracteres: ${parte.length}`;
+
+                // Atualiza o contador ao digitar
+                textareaParte.addEventListener('input', function() {
+                    contador.innerText = `Caracteres: ${this.value.length}`;
+                });
+
+                // Seleciona texto ao clicar na caixa
+                textareaParte.addEventListener('focus', function() {
+                    this.select();
+                });
+
+                // Adiciona botão "Já Fiz"
+                const botaoJaFiz = document.createElement('button');
+                botaoJaFiz.className = 'ja-fiz';
+                botaoJaFiz.innerText = 'Já Fiz';
+                botaoJaFiz.onclick = function() {
+                    textareaParte.disabled = true; // Desabilita a caixa de texto
+                    botaoJaFiz.disabled = true; // Desabilita o botão "Já Fiz"
+                    textareaParte.classList.add('fundo-verde'); // Muda o fundo para verde
+                };
+
+                // Adiciona botão "Copiar"
+                const botaoCopiar = document.createElement('button');
+                botaoCopiar.className = 'copiar';
+                botaoCopiar.innerText = 'Copiar'; // Texto do botão
+                botaoCopiar.onclick = function() {
+                    textareaParte.select(); // Seleciona o texto
+                    document.execCommand('copy'); // Executa o comando de cópia
+                    alert('Texto copiado para a área de transferência!'); // Mensagem de confirmação
+                };
+
+                divParte.appendChild(textareaParte);
+                divParte.appendChild(contador);
+                divParte.appendChild(botaoJaFiz);
+                divParte.appendChild(botaoCopiar);
+                resultadoDiv.appendChild(divParte);
+            });
+        }
+
+        function limparRoteiro() {
+            textareaPrincipal.value = '';
+            localStorage.removeItem('roteiro'); // Limpa o roteiro do localStorage
+            contadorPrincipal.childNodes[0].nodeValue = 'Caracteres: 0'; // Reseta o contador
+        }
+    </script>
+</body>
+</html>
